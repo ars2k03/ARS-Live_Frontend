@@ -1,4 +1,5 @@
 import 'package:ars_live/mediaSize/size.dart';
+import 'package:ars_live/screen/phone_number/phone_number.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../authService/auth_service.dart';
@@ -13,9 +14,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  String name = "";
-  String email = "";
-  String picture = "";
+
+  late String phoneNumber="";
 
   @override
   void initState() {
@@ -30,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     if (token == null) {
-      if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
@@ -47,20 +46,23 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomePage(
-            name: name,
-            email: email,
-            picture: picture,
+      if(phoneNumber.isNotEmpty){
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomePage(),
           ),
-        ),
-      );
+        );
+      }else{
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PhoneVerificationScreen(),
+          ),
+        );
+      }
     } else {
-      await prefs.remove("token");
-      await prefs.remove("refreshToken");
-
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -77,10 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (response["success"] == true) {
         final user = response["data"]["user"];
 
-        name = user["name"] ?? "User";
-        email = user["email"] ?? "";
-        picture = user["picture"] ?? "";
-
+        phoneNumber = user["phoneNumber"] ?? "";
         return true;
       }
 

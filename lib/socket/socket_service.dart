@@ -6,7 +6,7 @@ class SocketService {
   static void connect() {
 
     socket = IO.io(
-      "https://ars-live.onrender.com",
+      "http://10.146.174.92:8000",
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -33,29 +33,5 @@ class SocketService {
 
   }
 
-  static void sendMessage({
-    required String senderId,
-    required String receiverId,
-    required String message,
-  }) {
 
-    socket.emit( "send_message", {
-        "senderId": senderId,
-        "receiverId": receiverId,
-        "message": message,
-    });
-  }
-
-  static void listenMessage( Function(dynamic data) onMessage,) {
-
-    socket.on("receive_message", (data) {
-      onMessage(data);
-    });
-
-  }
-
-
-  static void removeMessageListener() {
-    socket.off("receive_message");
-  }
 }

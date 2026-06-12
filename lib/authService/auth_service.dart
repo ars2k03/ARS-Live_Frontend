@@ -10,7 +10,7 @@ class AuthService {
     if (kIsWeb) {
       return 'http://localhost:8000';
     }
-    return 'https://ars-live.onrender.com';
+    return 'http://10.146.174.92:8000';
   }
 
   static Future<Map<String, dynamic>> getProfile({bool retry = true})
@@ -229,30 +229,32 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> getMessages(String receiverId)
+  static Future<Map<String, dynamic>> sendOtp(String phoneNumber)
   async {
-
     try {
 
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
 
-      final response = await http.get(
-        Uri.parse("$baseUrl/messages/$receiverId"),
+      final response = await http.post(
+        Uri.parse("$baseUrl/send-otp"),
+
         headers: {
+          "Content-Type": "application/json",
           "Authorization": "Bearer $token",
         },
+
+        body: jsonEncode({
+          "phoneNumber": phoneNumber,
+        }),
       );
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-
         return {
           "success": true,
-          "messages": data["messages"],
         };
-
       }
 
       return {
@@ -261,13 +263,54 @@ class AuthService {
       };
 
     } catch (e) {
-
       return {
         "success": false,
         "message": e.toString(),
       };
-
     }
-
   }
+
+  static Future<Map<String, dynamic>> verifyOtp(String phoneNumber, String otp)
+  async {
+
+    try {
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/verify-otp"),
+
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+
+        body: jsonEncode({
+          "phoneNumber": phoneNumber,
+          "otp": otp,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          "success": true,
+        };
+      }
+
+      return {
+        "success": false,
+        "message": data["message"],
+      };
+
+    } catch (e) {
+      return {
+        "success": false,
+        "message": e.toString(),
+      };
+    }
+  }
+
 }
