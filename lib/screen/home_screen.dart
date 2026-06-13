@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../authService/auth_service.dart';
 import '../socket/socket_service.dart';
 import 'Login_Screen.dart';
-import 'call/calling.dart';
+import 'chat/chat_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,9 +13,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool isLoading = true;
-
   String name = "";
   String email = "";
   String picture = "";
@@ -23,18 +22,29 @@ class _HomePageState extends State<HomePage> {
 
   String currentUserId = "";
   List<dynamic> users = [];
+  Set<String> onlineUsers = {};
+
+  late Function(dynamic) _onOnlineUsers;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     SocketService.connect();
     loadProfile();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      SocketService.reconnectIfNeeded();
+    }
+  }
+
+  @override
   void dispose() {
-    SocketService.socket.off("incoming-call");
-    SocketService.socket.off("user-offline");
+    WidgetsBinding.instance.removeObserver(this);
+    SocketService.socket.off("online-users", _onOnlineUsers);
     super.dispose();
   }
 
@@ -57,9 +67,21 @@ class _HomePageState extends State<HomePage> {
 
         currentUserId = user["id"];
 
-        SocketService.socket.emit("register", currentUserId);
+        SocketService.register(currentUserId);
 
-        setupCallListeners();
+        _onOnlineUsers = (data) {
+          if (!mounted) return;
+
+          final users = Set<String>.from(data);
+
+          SocketService.onlineUsers = users;
+
+          setState(() {
+            onlineUsers = users;
+          });
+        };
+
+        SocketService.socket.on("online-users", _onOnlineUsers);
 
         await loadUsers();
       } else {
@@ -104,43 +126,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void setupCallListeners() {
-    SocketService.socket.off("incoming-call");
-    SocketService.socket.off("user-offline");
-
-    // NOTE: "call-accepted" and "call-rejected" are handled inside
-    // CallScreen itself (for the caller side). Do NOT register them
-    // here, otherwise they'll be removed when CallScreen calls
-    // socket.off() in its dispose().
-
-    SocketService.socket.on("incoming-call", (data) {
-      if (!mounted) return;
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CallScreen(
-            picture: data["callerPicture"] ?? "",
-            callerName: data["callerName"],
-            isIncoming: true,
-            callerId: data["callerId"],
-            currentUserId: currentUserId,
-          ),
-        ),
-      );
-    });
-
-    SocketService.socket.on("user-offline", (data) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("User is Offline"),
-        ),
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -167,9 +152,12 @@ class _HomePageState extends State<HomePage> {
               backgroundImage: picture.isNotEmpty ? NetworkImage(picture) : null,
               child: picture.isEmpty ? const Icon(Icons.person) : null,
             ),
+
             const SizedBox(width: 15),
+
             Expanded(
               child: Column(
+
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -189,42 +177,51 @@ class _HomePageState extends State<HomePage> {
                       InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () {
-                          showModalBottomSheet(
+                          showDialog(
                             context: context,
-                            showDragHandle: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(24),
-                              ),
-                            ),
                             builder: (context) {
-                              return Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.verified,
-                                      color: Colors.blue,
-                                      size: 60,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      "Verified Account",
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      "This account has been verified by ARS Live. "
-                                          "You can trust that this user is authentic.",
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 24),
-                                  ],
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
+                                icon: const Icon(
+                                  Icons.verified,
+                                  color: Colors.blue,
+                                  size: 60,
+                                ),
+                                title: const Text(
+                                  "Verified Account",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                content: const Text(
+                                  "This account has been verified by ARS Live. "
+                                      "You can trust that this user is authentic.",
+                                  textAlign: TextAlign.center,
+                                ),
+                                actions: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(double.infinity, 50),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+
+                                      ),
+                                      child: const Text("OK"),
+                                    ),
+                                  ),
+                                ],
                               );
                             },
                           );
@@ -433,16 +430,114 @@ class _HomePageState extends State<HomePage> {
                         vertical: context.h * .006,
                       ),
                       onTap: () {},
-                      leading: CircleAvatar(
-                        radius: 28,
-                        backgroundImage: NetworkImage(user["avatar_url"] ?? ""),
+                      leading: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundImage: NetworkImage(user["avatar_url"] ?? ""),
+                          ),
+
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: onlineUsers.contains(user["id"])
+                                    ? Colors.green
+                                    : Colors.grey,
+                                border: Border.all(
+                                  color: Theme.of(context).scaffoldBackgroundColor,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      title: Text(
-                        user["name"] ?? "Unknown",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      title: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              user["name"] ?? "Unknown",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.verified,
+                                      color: Colors.blue,
+                                      size: 60,
+                                    ),
+                                    title: const Text(
+                                      "Verified Account",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    content: const Text(
+                                      "This account has been verified by ARS Live.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    actions: [
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: FilledButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                          },
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                            foregroundColor: Colors.white,
+                                            minimumSize: const Size(double.infinity, 50),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          child: const Text("OK",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            child: const Icon(
+                              Icons.verified,
+                              color: Colors.blue,
+                              size: 18,
+                            ),
+                          ),
+                        ],
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4),
@@ -458,36 +553,22 @@ class _HomePageState extends State<HomePage> {
                       ),
                       trailing: IconButton(
                         onPressed: () {
-                          // Remove our own listeners temporarily so they
-                          // don't interfere while CallScreen takes over.
-                          SocketService.socket.off("incoming-call");
-                          SocketService.socket.off("user-offline");
 
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => CallScreen(
-                                picture: user["avatar_url"],
-                                callerName: user["name"],
-                                isIncoming: false,
-                                callerId: user["id"],
-                                currentUserId: currentUserId,
+                              builder: (_) => ChatScreen(
+                                currentUserId : currentUserId,
+                                receiverId: user["id"],
+                                receiverName: user["name"],
+                                receiverAvatar: user["avatar_url"] ?? "",
                               ),
                             ),
-                          ).then((_) {
-                            // Re-register listeners once back on HomePage
-                            if (mounted) setupCallListeners();
-                          });
+                          );
 
-                          SocketService.socket.emit("call-user", {
-                            "callerId": currentUserId,
-                            "callerName": name,
-                            "receiverId": user["id"],
-                            "callerPicture": picture,
-                          });
                         },
                         icon: Icon(
-                          Icons.wifi_calling_3,
+                          Icons.message_outlined,
                           size: 30,
                           color: isDark ? Colors.white : Colors.black,
                         ),

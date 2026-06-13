@@ -313,4 +313,56 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>> openConversation(String receiverId)
+  async {
+
+    try {
+
+      final prefs = await SharedPreferences.getInstance();
+
+      final token = prefs.getString("token");
+
+      final response = await http.post(Uri.parse(
+          "$baseUrl/chat/open",
+        ),
+
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+
+        body: jsonEncode({
+          "receiverId": receiverId,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+
+        return {
+          "success": true,
+          "conversation":
+          data["conversation"],
+        };
+
+      }
+
+      return {
+        "success": false,
+        "message":
+        data["message"] ?? "Unknown Error",
+      };
+
+    } catch (e) {
+
+      return {
+        "success": false,
+        "message": e.toString(),
+      };
+
+    }
+
+  }
+
 }
