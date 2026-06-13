@@ -7,10 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
 
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000';
-    }
-    return 'http://10.146.174.92:8000';
+    return 'https://ars-live-backend.onrender.com';
   }
 
   static Future<Map<String, dynamic>> getProfile({bool retry = true})
@@ -205,27 +202,6 @@ class AuthService {
         "message": e.toString(),
       };
 
-    }
-  }
-
-  static Future<Map<String, dynamic>> loginWithGoogleToken(String idToken)
-  async {
-    try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/google-login"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"idToken": idToken}),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        return {"success": true, "data": data};
-      } else {
-        return {"success": false, "message": data["message"]};
-      }
-    } catch (e) {
-      return {"success": false, "message": e.toString()};
     }
   }
 

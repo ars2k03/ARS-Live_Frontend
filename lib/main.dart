@@ -1,6 +1,5 @@
 import 'package:ars_live/screen/splash_screen.dart';
 import 'package:ars_live/theme/theme_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -9,17 +8,10 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (kIsWeb) {
-    await GoogleSignIn.instance.initialize(
-      clientId:
-      '796331888250-j26u0mgm41ls7lj042s54jccudrbtcfb.apps.googleusercontent.com',
-    );
-  } else {
-    await GoogleSignIn.instance.initialize(
-      serverClientId:
-      '796331888250-b7673sfv5mnqql002eskv1oh1pgdnoph.apps.googleusercontent.com',
-    );
-  }
+  await GoogleSignIn.instance.initialize(
+    serverClientId:
+    '796331888250-b7673sfv5mnqql002eskv1oh1pgdnoph.apps.googleusercontent.com',
+  );
 
   runApp(
     ChangeNotifierProvider(
@@ -46,7 +38,6 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    // Determine effective brightness (handles ThemeMode.system too)
     final platformBrightness =
     MediaQuery.platformBrightnessOf(context);
 
@@ -59,16 +50,16 @@ class _MyAppState extends State<MyApp> {
     final overlayStyle = isDark
         ? SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light, // light icons on dark bg
-      statusBarBrightness: Brightness.dark, // iOS
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
       systemNavigationBarColor: darkScaffoldBg,
       systemNavigationBarIconBrightness: Brightness.light,
       systemNavigationBarDividerColor: Colors.transparent,
     )
         : SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark, // dark icons on light bg
-      statusBarBrightness: Brightness.light, // iOS
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
       systemNavigationBarColor: lightScaffoldBg,
       systemNavigationBarIconBrightness: Brightness.dark,
       systemNavigationBarDividerColor: Colors.transparent,

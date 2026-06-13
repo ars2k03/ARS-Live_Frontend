@@ -8,7 +8,7 @@ class SocketService {
 
   static void connect() {
     socket = IO.io(
-      "http://10.146.174.92:8000",
+      "https://ars-live-backend.onrender.com",
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()

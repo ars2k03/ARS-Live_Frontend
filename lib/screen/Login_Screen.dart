@@ -4,13 +4,10 @@ import 'package:ars_live/screen/phone_number/phone_number.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../authService/auth_service.dart';
-import '../sub/google_sign_in_stub.dart'
-if (dart.library.html) '../sub/google_sign_in_web_impl.dart' as web_only;
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,62 +20,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
-  StreamSubscription? _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      _authSubscription = GoogleSignIn.instance.authenticationEvents
-          ?.listen(_onWebSignIn, onError: (e) {
-        setState(() => _errorMessage = e.toString());
-      });
-    }
-  }
-
-  Future<void> _onWebSignIn(GoogleSignInAuthenticationEvent event) async {
-
-    final GoogleSignInAccount? googleUser = switch (event) {
-      GoogleSignInAuthenticationEventSignIn() => event.user,
-      GoogleSignInAuthenticationEventSignOut() => null,
-    };
-
-    if (googleUser == null) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        setState(() => _errorMessage = "Failed to get token");
-        return;
-      }
-
-      final response = await AuthService.loginWithGoogleToken(idToken);
-
-      if (response["success"] == true) {
-        final token = response["data"]["token"];
-        final refreshToken = response["data"]["refreshToken"];
-        final user = response["data"]["user"];
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("token", token);
-        await prefs.setString("refreshToken", refreshToken);
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HomePage(),
-          ),
-        );
-      } else {
-        setState(() => _errorMessage = response["message"]);
-      }
-    } catch (e) {
-      setState(() => _errorMessage = e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   Future<void> openUrl(String url) async {
@@ -94,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _authSubscription?.cancel();
     super.dispose();
   }
 
@@ -219,58 +163,49 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 40),
 
-                      if (kIsWeb)
-                        SizedBox(
-                          width: double.infinity,
-                          height: 58,
-                          child: Center(
-                            child: web_only.renderButton(),
-                          ),
-                        )
-                      else
-                        SizedBox(
-                        width: double.infinity,
-                        height: 58,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleGoogleSignIn,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: isDarkMode? Colors.white : Colors.black,
-                            foregroundColor: isDarkMode? Colors.black : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/images/google.png',
-                                height: 22,
-                              ),
-
-                              const SizedBox(width: 12),
-
-                              _isLoading
-                                  ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: isDarkMode? Colors.white : Colors.black,
-                                ),
-                              )
-                                  : const Text(
-                                "Continue with Google",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                      SizedBox(
+                      width: double.infinity,
+                      height: 58,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleGoogleSignIn,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: isDarkMode? Colors.white : Colors.black,
+                          foregroundColor: isDarkMode? Colors.black : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
                           ),
                         ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/images/google.png',
+                              height: 22,
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            _isLoading
+                                ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isDarkMode? Colors.white : Colors.black,
+                              ),
+                            )
+                                : const Text(
+                              "Continue with Google",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                    ),
 
                       const SizedBox(height: 16),
 
