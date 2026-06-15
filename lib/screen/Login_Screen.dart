@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:ars_live/mediaSize/size.dart';
 import 'package:ars_live/screen/phone_number/phone_number.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -90,12 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage!),
-          backgroundColor: Colors.red,
-        ),
-      );
+
       setState(() {
         _errorMessage = "Google Sign-In failed";
       });

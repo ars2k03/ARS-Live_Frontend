@@ -27,8 +27,6 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
 
-    await Future.delayed(const Duration(seconds: 2));
-
     if (token == null) {
 
       Navigator.pushReplacement(

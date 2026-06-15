@@ -8,7 +8,7 @@ class SocketService {
 
   static void connect() {
     socket = IO.io(
-      "https://ars-live-backend.onrender.com",
+      "http://172.16.27.28:8000",
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
@@ -16,10 +16,6 @@ class SocketService {
     );
 
     socket.connect();
-
-    socket.on("online-users", (data) {
-      onlineUsers = Set<String>.from(data);
-    });
 
     socket.onConnect((_) {
       isConnected = true;

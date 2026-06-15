@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
 
   static String get baseUrl {
-    return 'https://ars-live-backend.onrender.com';
+    return 'http://172.16.27.28:8000';
   }
 
   static Future<Map<String, dynamic>> getProfile({bool retry = true})

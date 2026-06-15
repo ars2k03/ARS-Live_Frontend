@@ -104,7 +104,7 @@ class _ChatScreenState extends State<ChatScreen>   with WidgetsBindingObserver{
       final message = data["message"];
       final incomingConversationId = data["conversationId"];
 
-      // Only handle messages for THIS conversation
+
       if (incomingConversationId != conversationId) return;
 
       setState(() {
@@ -340,30 +340,14 @@ class _ChatScreenState extends State<ChatScreen>   with WidgetsBindingObserver{
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.receiverName,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: _primaryTextColor(isDark),
-                    ),
-                  ),
-                  Text(
-                    isReceiverOnline ? "Online" : "Offline",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isReceiverOnline
-                          ? Colors.green
-                          : _secondaryTextColor(isDark),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              child: Text(
+                widget.receiverName,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: _primaryTextColor(isDark),
+                ),
               ),
             ),
           ],

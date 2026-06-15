@@ -74,7 +74,7 @@ class _PhoneVerificationScreenState
     });
 
     try {
-      final phoneNumber = "$_countryCode${_phoneController.text.trim().substring(1)}";
+      final phoneNumber = _phoneController.text.trim();
 
       final response = await AuthService.sendOtp(phoneNumber);
 
